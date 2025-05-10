@@ -6,7 +6,7 @@ import { Button } from 'primereact/button'
 import { Divider } from 'primereact/divider'
 import { Chart } from 'primereact/chart'
 import { useState, useMemo } from 'react'
-import { useAppKit, useAppKitAccount } from "@reown/appkit/react"
+import { CreateWillButton } from "../components/CreateWillButton.tsx"
 
 interface Beneficiary {
   address: string
@@ -15,13 +15,11 @@ interface Beneficiary {
 
 export default function Create() {
   const [message, setMessage] = useState('')
-  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([])
-
-  const { open: openWallet } = useAppKit()
-  const { isConnected } = useAppKitAccount()
+  const [longevity, setLongevity] = useState(300)
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([{ address: '', points: 1 }])
 
   const addBeneficiary = () => {
-    setBeneficiaries([...beneficiaries, { address: '', points: 0 }])
+    setBeneficiaries([...beneficiaries, { address: '', points: 1 }])
   }
 
   const removeBeneficiary = (index: number) => {
@@ -38,20 +36,6 @@ export default function Create() {
     const updated = [...beneficiaries]
     updated[index].points = value
     setBeneficiaries(updated)
-  }
-
-  const handleSave = () => {
-    if (!isConnected) {
-      openWallet({ view: 'AllWallets', namespace: "eip155" }).then()
-      return
-    }
-
-    alert(
-      JSON.stringify({
-        message,
-        beneficiaries,
-      }, null, 2)
-    )
   }
 
   const chartData = useMemo(() => {
@@ -80,7 +64,7 @@ export default function Create() {
         <div className="grid">
           {/* Message */}
           <div className="col-12">
-            <label htmlFor="message" className="block mb-2">Last Message</label>
+            <label htmlFor="message" className="font-bold block mb-2 w-max">Last Message</label>
             <InputTextarea
               id="message"
               value={message}
@@ -89,7 +73,17 @@ export default function Create() {
               className="w-full"
             />
           </div>
-
+          <div className="col-12">
+            <label htmlFor="longevity" className="font-bold block mb-2 w-max">Expire after</label>
+            <InputNumber
+              id="longevity"
+              value={longevity}
+              onValueChange={(e) => setLongevity(e.value ?? 0)}
+              suffix=' seconds'
+              min={30}
+              className="w-full"
+            />
+          </div>
           <Divider />
 
           {/* Beneficiaries */}
@@ -135,13 +129,7 @@ export default function Create() {
           <Divider />
 
           <div className="col-12">
-            <Button
-              label="Save Will"
-              icon="pi pi-check"
-              className="w-full"
-              onClick={handleSave}
-              disabled={beneficiaries.length === 0}
-            />
+            <CreateWillButton message={message} beneficiaries={beneficiaries} longevity={longevity} />
           </div>
         </div>
       </Card>

@@ -3,6 +3,16 @@ import { task } from "hardhat/config";
 const arbId = "421614";
 const sapphireId = "23295";
 
+function showSpinner() {
+  const spinner = ['-', '\\', '|', '/'];
+  let spinnerIndex = 0;
+
+  return setInterval(() => {
+    process.stdout.write(`\rListening for event... ${spinner[spinnerIndex]}`);
+    spinnerIndex = (spinnerIndex + 1) % spinner.length;
+  }, 150);
+}
+
 task("deploy-testament")
   .setAction(async (args, hre) => {
     const mailbox = await hre.run("get-mailbox");
@@ -39,7 +49,7 @@ task("create-will")
       { heir: await signers[3].getAddress(), points: 5 },
     ];
 
-    const tx = await testament.createWill(heirs, 30); // 30 seconds longevity
+    const tx = await testament.createWill("When I'm gone", heirs, 30); // 30 seconds longevity
     await tx.wait();
 
     console.log("Will created with tx:", tx.hash);
@@ -84,9 +94,9 @@ task("reveal-will")
     const testament = await hre.ethers.getContractAt("Testament", args.address);
     const [creator] = await hre.ethers.getSigners();
 
-    const [heirs, totalPoints] = await testament.revealWill(creator.address);
+    const [heirs, totalPoints, message] = await testament.revealWill(creator.address);
 
-    console.log("✅ Will is now visible:");
+    console.log("✅ Will is now visible:", message);
     heirs.forEach((heir: any, i: number) => {
       const share = (Number(heir.points) * 100) / Number(totalPoints);
       console.log(`  Heir ${i + 1}: ${heir.heir}, Points: ${heir.points}, Share: ${share}%`);
@@ -108,19 +118,14 @@ task("try-early-distribute-eth")
 
     console.log(`Waiting for WillReceived (should be unavailable)... (tx: ${reqTx.hash})`);
 
-    const spinner = ['-', '\\', '|', '/'];
-    let spinnerIndex = 0;
-    const interval = setInterval(() => {
-      process.stdout.write(`\rListening for event... ${spinner[spinnerIndex]}`);
-      spinnerIndex = (spinnerIndex + 1) % spinner.length;
-    }, 150);
+    const interval = showSpinner();
 
     let events;
     do {
       const block = await ethers.provider.getBlockNumber();
-      events = await contract.queryFilter(contract.filters.WillReceived(args.creator, undefined), block - 10, 'latest');
+      events = await contract.queryFilter(contract.filters.WillReceived(), block - 10, 'latest');
       if (events.length === 0) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     } while (events.length === 0);
 
@@ -153,19 +158,14 @@ task("distribute-eth")
 
     console.log("Waiting for WillReceived (should be available)...");
 
-    const spinner = ['-', '\\', '|', '/'];
-    let spinnerIndex = 0;
-    const interval = setInterval(() => {
-      process.stdout.write(`\rListening for event... ${spinner[spinnerIndex]}`);
-      spinnerIndex = (spinnerIndex + 1) % spinner.length;
-    }, 150);
+    const interval = showSpinner();
 
     let events;
     do {
       const block = await ethers.provider.getBlockNumber();
-      events = await contract.queryFilter(contract.filters.WillReceived(args.creator, undefined), block - 10, 'latest');
+      events = await contract.queryFilter(contract.filters.WillReceived(), block - 10, 'latest');
       if (events.length === 0) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     } while (events.length === 0);
 
@@ -180,7 +180,7 @@ task("distribute-eth")
       process.exit(1);
     }
 
-    const tx = await contract.distributeETH(args.creator);
+    const tx = await contract.distribute(args.creator);
     await tx.wait();
     console.log("✅ ETH distributed.");
   });

@@ -6,9 +6,9 @@ import { AppToolbar } from "./components/AppToolbar.tsx"
 
 import { createAppKit } from "@reown/appkit/react";
 import { EthersAdapter } from "@reown/appkit-adapter-ethers";
+import { sapphireTestnet, arbitrumSepolia } from "@reown/appkit/networks";
 import Ping from "./pages/Ping.tsx"
 import Distribute from "./pages/Distribute.tsx"
-import { networks } from "./lib/networks.ts"
 
 const projectId = "a728aadc5ab4cd2410577c034a75ac60";
 
@@ -21,7 +21,7 @@ const metadata = {
 
 createAppKit({
   adapters: [new EthersAdapter()],
-  networks,
+  networks: [sapphireTestnet, arbitrumSepolia],
   metadata,
   projectId,
   features: {

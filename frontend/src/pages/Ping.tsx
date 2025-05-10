@@ -1,31 +1,46 @@
-import { Button } from 'primereact/button'
 import { useEffect, useState } from "react"
+import { useTestamentExpiry } from "../hooks/useTestamentExpiry.ts"
+import { PingButton } from "../components/PingButton.tsx"
+import { sapphireTestnet } from "@reown/appkit/networks";
+import { useAppKitNetwork } from "@reown/appkit/react"
 
 export default function Ping() {
-  const [nextPingDue] = useState(() => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000))
-  const [timeLeft, setTimeLeft] = useState(getTimeLeft(nextPingDue))
+  const { expiry, refetch } = useTestamentExpiry()
+  const nextPingDue = expiry ? new Date(expiry * 1000) : null
+
+  const [timeLeft, setTimeLeft] = useState<ReturnType<typeof getTimeLeft> | null>(null)
+  const { switchNetwork, chainId } = useAppKitNetwork();
 
   useEffect(() => {
+    switchNetwork(sapphireTestnet);
+  }, [switchNetwork]);
+
+  useEffect(() => {
+    if (chainId !== sapphireTestnet.id || nextPingDue === null) {
+      setTimeLeft(null)
+      return
+    }
+
     const interval = setInterval(() => {
       setTimeLeft(getTimeLeft(nextPingDue))
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [nextPingDue])
+  }, [nextPingDue, chainId])
 
   return (
     <div className="flex flex-column justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 100px)' }}>
-      <div className="mb-4 text-xl">
-        Next ping due in<br />
-        <span className="font-bold">{timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s</span>
-      </div>
+      {timeLeft && (
+        <div className="mb-4 text-xl">
+          Next ping due in<br />
+          { timeLeft.total > 0
+            ? <span className="font-bold">{timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s</span>
+            : <span className="font-bold">NOW!</span>
+          }
+        </div>
+      )}
 
-      <Button
-        label="I'm still alive"
-        icon="pi pi-heart"
-        className="p-button-lg"
-        onClick={() => alert("You are still alive!")}
-      />
+      <PingButton refetch={refetch}/>
     </div>
   )
 }

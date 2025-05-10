@@ -32,9 +32,9 @@ contract Testament is Router {
     }
 
     function createWill(
+        string calldata willMessage,
         Heir[] memory heirs,
-        uint256 longevity,
-        string calldata willMessage
+        uint256 longevity
     ) external {
         _updateLastSeen(msg.sender);
         _metas[msg.sender] = InheritMetadata({ longevity: longevity });

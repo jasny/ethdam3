@@ -23,6 +23,7 @@ contract Vault is Router {
     mapping(address => uint256) public ethBalances;
     mapping(address => mapping(address => uint256)) public tokenBalances;
     mapping(address => InheritTable) private _tables;
+    mapping(address => address[]) private _tokensDeposited;
     uint32 public immutable testamentDomain;
 
     constructor(address _mailbox, uint32 _testamentDomain, address _testamentAddr) Router(_mailbox) {
@@ -41,6 +42,9 @@ contract Vault is Router {
     // Deposit ETH into the vault
     function depositToken(address token, uint256 amount) external {
         require(IERC20(token).transferFrom(msg.sender, address(this), amount), "Transfer failed");
+        if (tokenBalances[msg.sender][token] == 0) {
+            _tokensDeposited[msg.sender].push(token);
+        }
         tokenBalances[msg.sender][token] += amount;
     }
 
@@ -79,44 +83,56 @@ contract Vault is Router {
         emit WillReceived(creator, true);
     }
 
-    // Distribute ETH to heirs
-    // @dev This function should be called after the will is revealed
-    function distributeETH(address creator) external {
-        require(ethBalances[creator] > 0, "Already claimed");
-
+    // Distribute the assets to the heirs
+    function distribute(address creator) external {
         InheritTable storage table = _tables[creator];
         require(table.available, "Will not yet available");
 
-        uint256 total = ethBalances[creator];
+        // Distribute ETH
+        uint256 ethTotal = ethBalances[creator];
         ethBalances[creator] = 0;
-
-        for (uint256 i = 0; i < table.heirs.length; ++i) {
-            uint256 amount = (total * table.heirs[i].points) / table.points;
-            payable(table.heirs[i].heir).transfer(amount);
+        if (ethTotal > 0) {
+            for (uint256 i = 0; i < table.heirs.length; ++i) {
+                uint256 amount = (ethTotal * table.heirs[i].points) / table.points;
+                payable(table.heirs[i].heir).transfer(amount);
+            }
         }
+
+        // Distribute ERC20 tokens
+        address[] storage tokens = _tokensDeposited[creator];
+        for (uint256 t = 0; t < tokens.length; ++t) {
+            address token = tokens[t];
+            uint256 tokenTotal = tokenBalances[creator][token];
+            if (tokenTotal > 0) {
+                tokenBalances[creator][token] = 0;
+                for (uint256 i = 0; i < table.heirs.length; ++i) {
+                    uint256 amount = (tokenTotal * table.heirs[i].points) / table.points;
+                    require(IERC20(token).transfer(table.heirs[i].heir, amount), "Transfer failed");
+                }
+            }
+        }
+
+        // Clean up token list
+        delete _tokensDeposited[creator];
     }
 
-    // Distribute ERC20 to heirs
-    // @dev This function should be called after the will is revealed
-    function distributeToken(address creator, address token) external {
-        require(tokenBalances[creator][token] > 0, "Already claimed");
-
+    // Get a list of ETH and ERC20 token balances
+    function getBalance(address creator) external view returns (uint256 eth, address[] memory tokens, uint256[] memory amounts) {
         InheritTable storage table = _tables[creator];
         require(table.available, "Will not yet available");
 
-        uint256 total = tokenBalances[creator][token];
-        tokenBalances[creator][token] = 0;
-
-        for (uint256 i = 0; i < table.heirs.length; ++i) {
-            uint256 amount = (total * table.heirs[i].points) / table.points;
-            require(IERC20(token).transfer(table.heirs[i].heir, amount), "Transfer failed");
+        eth = ethBalances[creator];
+        tokens = _tokensDeposited[creator];
+        amounts = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; ++i) {
+            amounts[i] = tokenBalances[creator][tokens[i]];
         }
     }
 
-    // Don't allow the owner to enroll a remote router, this is done in the constructor
+    // Disable the enrollRemoteRouter function
     function enrollRemoteRouter(
-        uint32, /* _domain */
-        bytes32 /* _router */
+        uint32,
+        bytes32
     ) public pure override {
         revert("Vault: enrollRemoteRouter is disabled");
     }
