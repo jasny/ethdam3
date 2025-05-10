@@ -1,6 +1,8 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@oasisprotocol/sapphire-hardhat";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-switch-network";
+
 import "./tasks";
 
 const accounts = {
@@ -28,6 +30,16 @@ const config: HardhatUserConfig = {
       // docker run -it -p8544-8548:8544-8548 ghcr.io/oasisprotocol/sapphire-localnet
       url: "http://localhost:8545",
       chainId: 0x5afd,
+      accounts,
+    },
+    'sepolia': {
+      url: 'https://ethereum-sepolia-rpc.publicnode.com',
+      chainId: 11155111,
+      accounts,
+    },
+    'arbitrum-sepolia': {
+      url: 'https://arbitrum-sepolia-rpc.publicnode.com',
+      chainId: 421614,
       accounts,
     },
   },
