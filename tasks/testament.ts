@@ -4,46 +4,27 @@ const arbId = "421614";
 const sapphireId = "23295";
 
 task("deploy-testament")
-  .addParam("mailbox", "Default mailbox on Sapphire Testnet", "0x79d3ECb26619B968A68CE9337DfE016aeA471435")
   .setAction(async (args, hre) => {
+    const mailbox = await hre.run("get-mailbox");
+
     const Testament = await hre.ethers.getContractFactory("Testament");
-    const testament = await Testament.deploy(args.mailbox);
+    const testament = await Testament.deploy(mailbox);
     const testamentAddr = await testament.getAddress();
     console.log(`Testament deployed at: ${testamentAddr}`);
     return testamentAddr;
   });
 
 task("deploy-vault")
-  .addParam("mailbox", "Default mailbox on Arbitrum Sepolia", "0x598facE78a4302f11E3de0bee1894Da0b2Cb71F8")
   .addParam("targetAddr", "Testament contract address")
   .addParam("targetNetwork", "Target network id")
   .setAction(async (args, hre) => {
+    const mailbox = await hre.run("get-mailbox");
+
     const Vault = await hre.ethers.getContractFactory("Vault");
-    const vault = await Vault.deploy(args.mailbox, args.targetNetwork, args.targetAddr);
+    const vault = await Vault.deploy(mailbox, args.targetNetwork, args.targetAddr);
     const vaultAddr = await vault.getAddress();
     console.log(`Vault deployed at: ${vaultAddr}`);
     return vaultAddr;
-  });
-
-task("register-ism")
-  .addParam("vaultAddr", "Contract address")
-  .addParam("ismAddr", "ISM contract address")
-  .setAction(async (args, hre) => {
-    const signer = await hre.ethers.provider.getSigner();
-    const contract = await hre.ethers.getContractAt("Router", args.vaultAddr, signer as any);
-    await contract.setInterchainSecurityModule(args.ismAddr);
-  });
-
-task("enroll")
-  .addParam("sourceAddr", "Contract address on source network")
-  .addParam("targetAddr", "Contract address on target network")
-  .addParam("targetNetwork", "Target network id")
-  .setAction(async (args, hre) => {
-    const signer = await hre.ethers.provider.getSigner();
-    const contract = await hre.ethers.getContractAt("Router", args.sourceAddr, signer as any);
-    await contract.enrollRemoteRouter(args.targetNetwork, hre.ethers.zeroPadValue(args.targetAddr, 32));
-    const arbRouter = await contract.routers(args.targetNetwork);
-    console.log(`remote router adr for ${args.targetNetwork}: ${arbRouter}`)
   });
 
 task("create-will")
@@ -224,10 +205,17 @@ task("full-testament")
     await hre.run("compile");
     const [creator] = await hre.ethers.getSigners();
 
-    const ismAddr = await hre.run("deploy-ism");
+    const ismVaultAddr = await hre.run("deploy-ism", { ismNetwork: args.vaultNetwork });
+    const ismTestamentAddr = await hre.run("deploy-ism", { ismNetwork: args.testamentNetwork });
 
     await hre.switchNetwork(args.testamentNetwork);
     const testament = await hre.run("deploy-testament");
+
+    await hre.run("register-ism", {
+      ismNetwork: args.testamentNetwork,
+      contractAddr: testament,
+      ismAddr: ismTestamentAddr,
+    });
 
     await hre.switchNetwork(args.vaultNetwork);
     const vault = await hre.run("deploy-vault", {
@@ -235,18 +223,20 @@ task("full-testament")
       targetNetwork: sapphireId,
     });
 
-    await hre.run("register-vault-ism", {
-      vaultAddr: vault,
-      ismAddr,
+    await hre.run("register-ism", {
+      ismNetwork: args.vaultNetwork,
+      contractAddr: vault,
+      ismAddr: ismVaultAddr,
     });
 
-    await hre.switchNetwork(args.testamentNetwork);
     await hre.run("enroll", {
+      ismNetwork: args.testamentNetwork,
       sourceAddr: testament,
       targetAddr: vault,
       targetNetwork: arbId,
-    })
+    });
 
+    await hre.switchNetwork(args.testamentNetwork);
     await hre.run("create-will", { address: testament });
 
     await hre.switchNetwork(args.vaultNetwork);

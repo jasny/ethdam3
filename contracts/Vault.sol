@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Router} from "@hyperlane-xyz/core/contracts/client/Router.sol";
+import { Router } from "@hyperlane-xyz/core/contracts/client/Router.sol";
 
 contract Vault is Router {
     uint256 public constant HANDLE_GAS_AMOUNT = 50_000;
@@ -19,20 +19,18 @@ contract Vault is Router {
     }
 
     event WillReceived(address indexed creator, bool available);
-    event RawMessageReceived(bytes message);
 
     mapping(address => uint256) public ethBalances;
     mapping(address => mapping(address => uint256)) public tokenBalances;
     mapping(address => InheritTable) private _tables;
     uint32 public immutable testamentDomain;
 
-    constructor(address _mailbox, uint32 _testamentDomain, address _remoteRouter) Router(_mailbox) {
+    constructor(address _mailbox, uint32 _testamentDomain, address _testamentAddr) Router(_mailbox) {
         _transferOwnership(msg.sender);
         setHook(address(0));
 
         testamentDomain = _testamentDomain;
-
-        _enrollRemoteRouter(_testamentDomain, bytes32(uint256(uint160(_remoteRouter))));
+        _enrollRemoteRouter(_testamentDomain, bytes32(uint256(uint160(_testamentAddr))));
     }
 
     // Deposit ETH into the vault
@@ -57,11 +55,8 @@ contract Vault is Router {
         _dispatch(testamentDomain, msgBody);
     }
 
-    // Receive a will from the Testament router
+    // Handle the incoming reply from the Testament
     function _handle(uint32, bytes32, bytes calldata message) internal override {
-        emit RawMessageReceived(message);
-
-        /*
         (address creator, Heir[] memory heirs, uint256 totalPoints, string memory status) =
                             abi.decode(message, (address, Heir[], uint256, string));
 
@@ -81,7 +76,7 @@ contract Vault is Router {
             table.heirs.push(heirs[i]);
         }
 
-        emit WillReceived(creator, true);*/
+        emit WillReceived(creator, true);
     }
 
     // Distribute ETH to heirs

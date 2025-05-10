@@ -5,13 +5,14 @@ const sapphireId = "23295";
 
 task("deploy-ping")
   .addOptionalParam("pingNetwork", "Network to deploy the Ping contract on", "arbitrum-sepolia")
-  .addParam("mailbox", "Default mailbox on Arbitrum Sepolia", "0x598facE78a4302f11E3de0bee1894Da0b2Cb71F8")
   .setAction(async (args, hre) => {
     await hre.switchNetwork(args.pingNetwork);
     console.log(`Deploying Ping on ${hre.network.name}...`);
 
+    const mailbox = await hre.run("get-mailbox");
+
     const Ping = await hre.ethers.getContractFactory("Ping");
-    const ping = await Ping.deploy(args.mailbox);
+    const ping = await Ping.deploy(mailbox);
     const pingAddr = await ping.getAddress();
     console.log(`Ping deployed at: ${pingAddr}`);
     return pingAddr;
@@ -19,19 +20,18 @@ task("deploy-ping")
 
 task("deploy-pong")
   .addOptionalParam("pongNetwork", "Network to deploy the Pong contract on", "sapphire-testnet")
-  .addParam("mailbox", "Default mailbox on Sapphire Testnet", "0x79d3ECb26619B968A68CE9337DfE016aeA471435")
   .setAction(async (args, hre) => {
     await hre.switchNetwork(args.pongNetwork);
     console.log(`Deploying Pong on ${hre.network.name}...`);
 
+    const mailbox = await hre.run("get-mailbox");
+
     const Pong = await hre.ethers.getContractFactory("Pong");
-    const pong = await Pong.deploy(args.mailbox);
+    const pong = await Pong.deploy(mailbox);
     const pongAddr = await pong.getAddress();
     console.log(`Pong deployed at: ${pongAddr}`);
     return pongAddr;
   });
-
-
 
 task("enroll-ping")
   .addOptionalParam("pingNetwork", "Network to deploy the Ping contract on", "arbitrum-sepolia")
@@ -158,8 +158,8 @@ task("full-ping").setAction(async (args, hre) => {
     pingAddr: pingAddr,
     pongAddr: pongAddr,
   });
-  await hre.run("register-ping-ism", {
-    pingAddr: pingAddr,
+  await hre.run("register-ism", {
+    contractAddr: pingAddr,
     ismAddr: ismAddr,
   });
 
