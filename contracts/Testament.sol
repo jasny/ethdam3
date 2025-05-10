@@ -24,15 +24,21 @@ contract Testament is Router {
     mapping(address => InheritMetadata) public _metas;
     mapping(address => InheritTable) private _tables;
     mapping(address => uint256) public _lastSeen;
+    mapping(address => string) private _willMessages;
 
     constructor(address _mailbox) Router(_mailbox) {
         _transferOwnership(msg.sender);
         setHook(address(0));
     }
 
-    function createWill(Heir[] memory heirs, uint256 longevity) external {
+    function createWill(
+        Heir[] memory heirs,
+        uint256 longevity,
+        string calldata willMessage
+    ) external {
         _updateLastSeen(msg.sender);
         _metas[msg.sender] = InheritMetadata({ longevity: longevity });
+        _willMessages[msg.sender] = willMessage;
 
         uint256 points = 0;
         for (uint256 i = 0; i < heirs.length; ++i) {
@@ -50,7 +56,7 @@ contract Testament is Router {
         emit WillCreated(msg.sender);
     }
 
-    function revealWill(address creator) external view returns (Heir[] memory, uint256) {
+    function revealWill(address creator) external view returns (Heir[] memory, uint256, string memory) {
         InheritMetadata memory meta = _metas[creator];
         require(meta.longevity > 0, "Will not found");
 
@@ -58,14 +64,19 @@ contract Testament is Router {
         require(block.timestamp >= expiry, "Will not yet available");
 
         InheritTable storage table = _tables[creator];
-        return (table.heirs, table.points);
+        return (table.heirs, table.points, _willMessages[creator]);
     }
 
     function getLastSeen(address owner) external view returns (uint256) {
         return _lastSeen[owner];
     }
 
-    // Update the last seen timestamp for the sender
+    function getExpiry(address owner) external view returns (uint256) {
+        InheritMetadata memory meta = _metas[owner];
+        require(meta.longevity > 0, "Will not found");
+        return _lastSeen[owner] + meta.longevity;
+    }
+
     function ping() external {
         _updateLastSeen(msg.sender);
     }
@@ -85,10 +96,10 @@ contract Testament is Router {
         bool available = (meta.longevity > 0 && block.timestamp >= _lastSeen[creator] + meta.longevity);
 
         if (!available) {
-            reply = abi.encode(creator, empty, 0, "unavailable");
+            reply = abi.encode(creator, empty, 0);
         } else {
             InheritTable storage table = _tables[creator];
-            reply = abi.encode(creator, table.heirs, table.points, "ok");
+            reply = abi.encode(creator, table.heirs, table.points);
         }
 
         _dispatch(origin, reply);

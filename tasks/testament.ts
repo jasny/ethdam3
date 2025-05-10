@@ -98,12 +98,12 @@ task("try-early-distribute-eth")
   .addParam("creator", "Will creator address")
   .setAction(async (args, hre) => {
     const ethers = hre.ethers;
-    const [creator] = await ethers.getSigners();
-    const contract = await ethers.getContractAt("Vault", args.vault, creator as any);
+    const [signer] = await ethers.getSigners();
+    const contract = await ethers.getContractAt("Vault", args.vault, signer as any);
 
     const fee = await contract.quoteRequestWill(args.creator);
     console.log(`Requesting will (Fee: ${ethers.formatEther(fee)} ETH)...`);
-    const reqTx = await contract.requestWill(creator, { value: fee });
+    const reqTx = await contract.requestWill(args.creator, { value: fee });
     await reqTx.wait();
 
     console.log(`Waiting for WillReceived (should be unavailable)... (tx: ${reqTx.hash})`);
@@ -118,7 +118,7 @@ task("try-early-distribute-eth")
     let events;
     do {
       const block = await ethers.provider.getBlockNumber();
-      events = await contract.queryFilter(contract.filters.WillReceived(args.creator), block - 10, 'latest');
+      events = await contract.queryFilter(contract.filters.WillReceived(args.creator, undefined), block - 10, 'latest');
       if (events.length === 0) {
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
@@ -143,12 +143,12 @@ task("distribute-eth")
   .addParam("creator", "Will creator address")
   .setAction(async (args, hre) => {
     const ethers = hre.ethers;
-    const [creator] = await ethers.getSigners();
-    const contract = await ethers.getContractAt("Vault", args.vault, creator as any);
+    const [signer] = await ethers.getSigners();
+    const contract = await ethers.getContractAt("Vault", args.vault, signer as any);
 
     const fee = await contract.quoteRequestWill(args.creator);
     console.log(`Requesting will (Fee: ${ethers.formatEther(fee)} ETH)...`);
-    const reqTx = await contract.requestWill(creator, { value: fee });
+    const reqTx = await contract.requestWill(args.creator, { value: fee });
     await reqTx.wait();
 
     console.log("Waiting for WillReceived (should be available)...");
@@ -163,7 +163,7 @@ task("distribute-eth")
     let events;
     do {
       const block = await ethers.provider.getBlockNumber();
-      events = await contract.queryFilter(contract.filters.WillReceived(args.creator), block - 10, 'latest');
+      events = await contract.queryFilter(contract.filters.WillReceived(args.creator, undefined), block - 10, 'latest');
       if (events.length === 0) {
         await new Promise(resolve => setTimeout(resolve, 5000));
       }

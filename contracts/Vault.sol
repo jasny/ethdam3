@@ -57,10 +57,10 @@ contract Vault is Router {
 
     // Handle the incoming reply from the Testament
     function _handle(uint32, bytes32, bytes calldata message) internal override {
-        (address creator, Heir[] memory heirs, uint256 totalPoints, string memory status) =
-                            abi.decode(message, (address, Heir[], uint256, string));
+        (address creator, Heir[] memory heirs, uint256 totalPoints) =
+                            abi.decode(message, (address, Heir[], uint256));
 
-        bool available = (keccak256(bytes(status)) == keccak256("ok"));
+        bool available = totalPoints > 0;
 
         if (!available) {
             emit WillReceived(creator, false);
