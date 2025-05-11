@@ -72,12 +72,12 @@ export default function Create() {
               id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              rows={4}
+              rows={8}
               className="w-full"
             />
           </div>
           <div className="col-12">
-            <label htmlFor="longevity" className="font-bold block mb-2 w-max">Expire after</label>
+            <label htmlFor="longevity" className="font-bold block mb-2 w-max">Reveal after</label>
             <InputNumber
               id="longevity"
               value={longevity}
