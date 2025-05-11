@@ -18,7 +18,7 @@ export default function DistributeDetail() {
   const { address } = useParams<{ address: string }>();
   const { expiry } = useTestamentExpiry(address);
   const { balance, refetch: refetchBalance } = useVaultBalance(address);
-  const { heirs, points, message, loading: willLoading } = useTestamentWill(address);
+  const { heirs, points, message, loading: willLoading, refetch: refetchWill } = useTestamentWill(address);
 
   const [isAvailable, setIsAvailable] = useState(false);
 
@@ -33,7 +33,10 @@ export default function DistributeDetail() {
     setIsAvailable(available);
 
     if (!available && expiry) {
-      const timeout = setTimeout(() => setIsAvailable(true), (expiry * 1000) - Date.now() + 5000);
+      const timeout = setTimeout(() => {
+        setIsAvailable(true);
+        refetchWill().then();
+      }, (expiry * 1000) - Date.now() + 1000);
       return () => clearTimeout(timeout);
     }
   }, [expiry]);
