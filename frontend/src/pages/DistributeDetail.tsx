@@ -33,7 +33,7 @@ export default function DistributeDetail() {
     setIsAvailable(available);
 
     if (!available && expiry) {
-      const timeout = setTimeout(() => setIsAvailable(true), (expiry * 1000) - Date.now() + 1000);
+      const timeout = setTimeout(() => setIsAvailable(true), (expiry * 1000) - Date.now() + 5000);
       return () => clearTimeout(timeout);
     }
   }, [expiry]);

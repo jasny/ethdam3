@@ -121,6 +121,7 @@ export default function Create() {
                   severity="danger"
                   rounded
                   size="small"
+                  text
                   onClick={() => removeBeneficiary(index)}
                   aria-label="Remove"
                   className="mt-4"
