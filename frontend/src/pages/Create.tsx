@@ -7,6 +7,7 @@ import { Divider } from 'primereact/divider'
 import { Chart } from 'primereact/chart'
 import { useState, useMemo } from 'react'
 import { CreateWillButton } from "../components/CreateWillButton.tsx"
+import { useSapphireTestnet } from "../hooks/useNetwork.ts"
 
 interface Beneficiary {
   address: string
@@ -14,6 +15,8 @@ interface Beneficiary {
 }
 
 export default function Create() {
+  useSapphireTestnet()
+
   const [message, setMessage] = useState('')
   const [longevity, setLongevity] = useState(300)
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([{ address: '', points: 1 }])

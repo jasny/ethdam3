@@ -48,6 +48,32 @@ contract Vault is Router {
         tokenBalances[msg.sender][token] += amount;
     }
 
+    // Withdraw ETH and ERC20 tokens from the vault
+    function withdraw() external {
+        address creator = msg.sender;
+
+        // Withdraw ETH
+        uint256 ethAmount = ethBalances[creator];
+        ethBalances[creator] = 0;
+        if (ethAmount > 0) {
+            payable(creator).transfer(ethAmount);
+        }
+
+        // Withdraw ERC20 tokens
+        address[] storage tokens = _tokensDeposited[creator];
+        for (uint256 i = 0; i < tokens.length; ++i) {
+            address token = tokens[i];
+            uint256 tokenAmount = tokenBalances[creator][token];
+            if (tokenAmount > 0) {
+                tokenBalances[creator][token] = 0;
+                require(IERC20(token).transfer(creator, tokenAmount), "Token transfer failed");
+            }
+        }
+
+        // Clean up token list
+        delete _tokensDeposited[creator];
+    }
+
     // Calculate the fee for sending a request to the Testament
     function quoteRequestWill(address creator) external view returns (uint256) {
         return _quoteDispatch(testamentDomain, abi.encode(creator));
@@ -118,9 +144,6 @@ contract Vault is Router {
 
     // Get a list of ETH and ERC20 token balances
     function getBalance(address creator) external view returns (uint256 eth, address[] memory tokens, uint256[] memory amounts) {
-        InheritTable storage table = _tables[creator];
-        require(table.available, "Will not yet available");
-
         eth = ethBalances[creator];
         tokens = _tokensDeposited[creator];
         amounts = new uint256[](tokens.length);

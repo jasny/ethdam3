@@ -16,7 +16,7 @@ interface CreateWillButtonProps {
 export function CreateWillButton({ message, beneficiaries, longevity }: CreateWillButtonProps) {
   const { walletProvider } = useAppKitProvider<Eip1193Provider>("eip155");
   const { isConnected } = useAppKitAccount();
-  const { switchNetwork } = useAppKitNetwork();
+  const { chainId } = useAppKitNetwork();
   const toast = useRef<Toast>(null);
 
   const handleCreate = async () => {
@@ -29,9 +29,11 @@ export function CreateWillButton({ message, beneficiaries, longevity }: CreateWi
       return;
     }
 
-    try {
-      switchNetwork(sapphireTestnet);
+    if (chainId !== sapphireTestnet.id) {
+      return;
+    }
 
+    try {
       const provider = new BrowserProvider(walletProvider);
       const signer = await provider.getSigner();
 
@@ -74,7 +76,7 @@ export function CreateWillButton({ message, beneficiaries, longevity }: CreateWi
         label="Save Will"
         icon="pi pi-check"
         className="w-full"
-        disabled={beneficiaries.length === 0}
+        disabled={beneficiaries.length === 0 || chainId !== sapphireTestnet.id}
         onClick={handleCreate}
       />
     </>

@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
-import { Contract, BrowserProvider, type Eip1193Provider } from "ethers";
-import { useAppKitProvider, useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
+import { Contract, JsonRpcProvider } from "ethers";
+import { useAppKitAccount } from "@reown/appkit/react";
+import { sapphireTestnet } from "@reown/appkit/networks";
 import TestamentArtifact from "../abi/Testament.json";
-import { testamentAddress } from "../lib/constants.ts"
+import { testamentAddress } from "../lib/constants.ts";
 
-export function useTestamentExpiry() {
-  const { walletProvider } = useAppKitProvider<Eip1193Provider>("eip155");
-  const { address, isConnected } = useAppKitAccount();
-  const { chainId } = useAppKitNetwork();
+export function useTestamentExpiry(overrideAddress?: string) {
+  const { address: accountAddress } = useAppKitAccount();
   const [expiry, setExpiry] = useState<number | null>(null);
 
   const fetchExpiry = async () => {
-    if (!isConnected || !address || !walletProvider || !chainId) return null;
+    const address = overrideAddress ?? accountAddress;
+    if (!address) return null;
 
-    const provider = new BrowserProvider(walletProvider);
+    const rpcUrl = sapphireTestnet.rpcUrls.default?.http[0];
+    if (!rpcUrl) throw new Error("Sapphire RPC URL not found");
+
+    const provider = new JsonRpcProvider(rpcUrl);
 
     const contract = new Contract(
       testamentAddress,
@@ -32,7 +35,7 @@ export function useTestamentExpiry() {
 
   useEffect(() => {
     fetchExpiry().then(result => setExpiry(result));
-  }, [walletProvider, address, isConnected, chainId]);
+  }, [overrideAddress, accountAddress]);
 
   return {
     expiry,

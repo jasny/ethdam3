@@ -30,13 +30,18 @@ export function AppToolbar() {
       command: () => navigate('/create'),
     },
     {
+      label: 'Deposit',
+      icon: 'pi pi-wallet',
+      command: () => navigate('/deposit'),
+    },
+    {
       label: "I'm still alive",
       icon: 'pi pi-heart',
       command: () => navigate('/ping'),
     },
     {
       label: 'Execute Will',
-      icon: 'pi pi-check',
+      icon: 'pi pi-hammer',
       command: () => navigate('/distribute'),
     },
   ]

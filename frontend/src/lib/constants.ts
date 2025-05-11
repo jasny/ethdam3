@@ -1,2 +1,2 @@
-export const testamentAddress = "0x34dd58B16e2b57Db6F929F852B4138039Bdf306D";
-export const vaultAddress = "0xe634bD248cab0767cCe18e6f6F3f6DAd06a767d8";
+export const testamentAddress = "0x883bD211e5C5403153dF1d8596B2cDb050a81E1b";
+export const vaultAddress = "0xB868a4aF6360691dc0fc3E71acbF878bB1e78488";

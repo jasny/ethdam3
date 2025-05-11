@@ -49,7 +49,7 @@ task("create-will")
       { heir: await signers[3].getAddress(), points: 5 },
     ];
 
-    const tx = await testament.createWill("When I'm gone", heirs, 30); // 30 seconds longevity
+    const tx = await testament.createWill("When I'm gone", heirs, 20); // 20 seconds longevity
     await tx.wait();
 
     console.log("Will created with tx:", tx.hash);
@@ -78,7 +78,7 @@ task("try-early-reveal")
     const testament = await hre.ethers.getContractAt("Testament", args.address);
     const [creator] = await hre.ethers.getSigners();
 
-    console.log("Trying to reveal the will too early...");
+    console.log(`Trying to reveal the will for ${creator.address} too early...`);
     try {
       await testament.revealWill(creator.address);
       console.log("⚠️ Uh oh. The will was already available!");
@@ -93,6 +93,8 @@ task("reveal-will")
   .setAction(async (args, hre) => {
     const testament = await hre.ethers.getContractAt("Testament", args.address);
     const [creator] = await hre.ethers.getSigners();
+
+    console.log(`Revealing will for ${creator.address}...`);
 
     const [heirs, totalPoints, message] = await testament.revealWill(creator.address);
 
@@ -112,7 +114,7 @@ task("try-early-distribute-eth")
     const contract = await ethers.getContractAt("Vault", args.vault, signer as any);
 
     const fee = await contract.quoteRequestWill(args.creator);
-    console.log(`Requesting will (Fee: ${ethers.formatEther(fee)} ETH)...`);
+    console.log(`Requesting will for ${args.creator} (Fee: ${ethers.formatEther(fee)} ETH)...`);
     const reqTx = await contract.requestWill(args.creator, { value: fee });
     await reqTx.wait();
 
@@ -152,7 +154,7 @@ task("distribute-eth")
     const contract = await ethers.getContractAt("Vault", args.vault, signer as any);
 
     const fee = await contract.quoteRequestWill(args.creator);
-    console.log(`Requesting will (Fee: ${ethers.formatEther(fee)} ETH)...`);
+    console.log(`Requesting will for ${args.creator} (Fee: ${ethers.formatEther(fee)} ETH)...`);
     const reqTx = await contract.requestWill(args.creator, { value: fee });
     await reqTx.wait();
 

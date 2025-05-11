@@ -9,6 +9,8 @@ import { EthersAdapter } from "@reown/appkit-adapter-ethers";
 import { sapphireTestnet, arbitrumSepolia } from "@reown/appkit/networks";
 import Ping from "./pages/Ping.tsx"
 import Distribute from "./pages/Distribute.tsx"
+import Deposit from "./pages/Deposit.tsx"
+import DistributeDetail from "./pages/DistributeDetail.tsx"
 
 const projectId = "a728aadc5ab4cd2410577c034a75ac60";
 
@@ -37,8 +39,10 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/create" element={<Create />} />
+          <Route path="/deposit" element={<Deposit />} />
           <Route path="/ping" element={<Ping />} />
           <Route path="/distribute" element={<Distribute />} />
+          <Route path="/distribute/:address" element={<DistributeDetail />} />
         </Routes>
       </div>
     </BrowserRouter>

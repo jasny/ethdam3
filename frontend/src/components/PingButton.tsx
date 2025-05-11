@@ -1,14 +1,16 @@
 import { useRef } from "react";
 import { Contract, BrowserProvider, type Eip1193Provider } from "ethers";
 import TestamentArtifact from "../abi/Testament.json";
-import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
+import { useAppKitProvider, useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
 import { testamentAddress } from "../lib/constants.ts";
+import { sapphireTestnet } from "@reown/appkit/networks"
 
 export function PingButton({ refetch }: { refetch: () => void }) {
   const { walletProvider } = useAppKitProvider<Eip1193Provider>("eip155");
   const { isConnected } = useAppKitAccount();
+  const { chainId } = useAppKitNetwork();
   const toast = useRef<Toast>(null);
 
   const handlePing = async () => {
@@ -18,6 +20,10 @@ export function PingButton({ refetch }: { refetch: () => void }) {
         summary: "Wallet not connected",
         detail: "Please connect your wallet first.",
       });
+      return;
+    }
+
+    if (chainId !== sapphireTestnet.id) {
       return;
     }
 
@@ -62,6 +68,7 @@ export function PingButton({ refetch }: { refetch: () => void }) {
         icon="pi pi-heart"
         className="p-button-lg"
         onClick={handlePing}
+        disabled={chainId !== sapphireTestnet.id}
       />
     </>
   );
